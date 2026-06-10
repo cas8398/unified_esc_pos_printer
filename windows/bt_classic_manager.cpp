@@ -321,9 +321,10 @@ void BtClassicManager::Write(
 
   std::thread([this, data, shared_result, writer_copy]() {
     try {
+      // ✅ FIX: Changed from (data.data(), static_cast<uint32_t>(data.size()))
       writer_copy.WriteBytes(
           winrt::array_view<const uint8_t>(
-              data.data(), static_cast<uint32_t>(data.size())));
+              data.data(), data.data() + data.size()));
       writer_copy.StoreAsync().get();
       writer_copy.FlushAsync().get();
 
@@ -374,3 +375,4 @@ void BtClassicManager::Cleanup() {
 }
 
 }  // namespace unified_esc_pos_printer
+

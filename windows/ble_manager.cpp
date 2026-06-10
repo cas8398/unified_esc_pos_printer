@@ -233,7 +233,7 @@ void BleManager::StopScanInternal() {
   }
 }
 
-// ── Connection ───────────────────────────────────────────────────────────
+// ── Connection ─────────────────────────────────────────────────────────── 
 
 guid BleManager::ParseUuid(const std::string& uuid_str) {
   // Parse a UUID string like "000018f0-0000-1000-8000-00805f9b34fb"
@@ -241,7 +241,10 @@ guid BleManager::ParseUuid(const std::string& uuid_str) {
   std::wstring wide(uuid_str.begin(), uuid_str.end());
   std::wstring braced = L"{" + wide + L"}";
   CLSIDFromString(braced.c_str(), &g);
-  return winrt::guid(g);
+  
+  // ✅ FIX: Replaced `return winrt::guid(g);` with a safe memory reinterpret cast.
+  // Because GUID and winrt::guid have the exact same memory layout, this is 100% safe.
+  return *reinterpret_cast<winrt::guid*>(&g);
 }
 
 void BleManager::Connect(
@@ -420,8 +423,9 @@ void BleManager::Write(
   std::thread([this, data, without_response, shared_result, char_copy]() {
     try {
       DataWriter writer;
+      // ✅ FIX: Changed from (data.data(), static_cast<uint32_t>(data.size()))
       writer.WriteBytes(
-          winrt::array_view<const uint8_t>(data.data(), static_cast<uint32_t>(data.size())));
+          winrt::array_view<const uint8_t>(data.data(), data.data() + data.size()));
       auto buffer = writer.DetachBuffer();
 
       auto write_option = without_response
@@ -486,3 +490,4 @@ void BleManager::Cleanup() {
 }
 
 }  // namespace unified_esc_pos_printer
+
